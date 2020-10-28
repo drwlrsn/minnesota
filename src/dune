@@ -1,4 +1,0 @@
-(library
- (name minnesota)
- (public_name minnesota)
- (libraries logs))
