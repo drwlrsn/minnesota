@@ -1,0 +1,3 @@
+(library
+ (name minnesota)
+ (libraries cmdliner conduit-lwt lwt uri ke fmt))
