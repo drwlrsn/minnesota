@@ -1,3 +1,8 @@
 
 module Commandline = Commandline
-module Gopher = Gopher
+module Server = Server
+module Gopher = struct
+  include Gopher
+
+  module P = Gopher.P
+end

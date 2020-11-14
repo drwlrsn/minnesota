@@ -1,0 +1,3 @@
+(library
+ (name property)
+ (libraries qcheck qcheck-alcotest minnesota))

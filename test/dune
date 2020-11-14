@@ -1,2 +1,3 @@
 (test
- (name minnesota))
+ (name test)
+ (libraries alcotest minnesota qcheck qcheck-alcotest property unit))

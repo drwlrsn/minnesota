@@ -1,87 +1,27 @@
-open Lwt.Infix
+open Angstrom
 
-(* 4096 *)
-let capacity = 0x1000
+module P = struct
+  let is_tab = function '\t' -> true | _ -> false
 
-let ( >>? ) x f =
-  x >>= function Ok x -> f x | Error err -> Lwt.return (Error err)
+  let is_eol = function '\r' | '\n' -> true | _ -> false
 
-(* See for ideas https://github.com/dune-universe/dune-universe/blob/07ef20ca81afb87e97049880dc27c712953ff8b9/packages/conduit.3.0.0/src/core/howto.mld *)
-(* https://gist.github.com/dinosaure/ac2a5956a16370ddcf965a1980f5c9a0 *)
-let config =
-  { Conduit_lwt.TCP.sockaddr = Lwt_unix.ADDR_UNIX "localhost"; capacity = 1 }
+  let is_unascii = function '\032' .. '\126' -> true | _ -> false
+end
 
-let getline queue =
-  let exists ~predicate queue =
-    let pos = ref 0 and res = ref (-1) in
-    Ke.Rke.iter
-      (fun chr ->
-        if predicate chr then res := !pos;
-        incr pos)
-      queue;
-    if !res = -1 then None else Some !res
-  in
-  let blit src src_off dst dst_off len =
-    Bigstringaf.blit_to_bytes src ~src_off dst ~dst_off ~len
-  in
-  match exists ~predicate:(( = ) '\n') queue with
-  | Some pos ->
-      let tmp = Bytes.create pos in
-      Ke.Rke.N.keep_exn queue ~blit ~length:Bytes.length ~off:0 ~len:pos tmp;
-      Ke.Rke.N.shift_exn queue (pos + 1);
-      Some (Bytes.unsafe_to_string tmp)
-  | None -> None
+let selector = take_while P.is_unascii <* end_of_line <* end_of_input
 
-let getline queue flow =
-  let tmp = Cstruct.create capacity in
-  let blit src src_off dst dst_off len =
-    let src = Cstruct.to_bigarray src in
-    Bigstringaf.blit src ~src_off dst ~dst_off ~len
-  in
-  let rec go () =
-    match getline queue with
-    | Some line -> Lwt.return_ok (`Line line)
-    | None -> (
-        Conduit_lwt.recv flow tmp >>? function
-        | `End_of_flow as r -> Lwt.return_ok r
-        | `Input len ->
-            Ke.Rke.N.push queue ~blit ~length:Cstruct.len ~off:0 ~len tmp;
-            go () )
-  in
-  go ()
+let eol =  take_while P.is_eol <* end_of_input
 
-let handler flow =
-  let queue = Ke.Rke.create ~capacity Bigarray.char in
-  let rec go () =
-    getline queue flow >>= function
-    | Ok `End_of_flow | Error _ -> Conduit_lwt.close flow
-    | Ok (`Line "ping") ->
-        Conduit_lwt.send flow (Cstruct.of_string "pong\n") >>? fun _ -> go ()
-    | Ok (`Line "pong") ->
-        Conduit_lwt.send flow (Cstruct.of_string "ping\n") >>? fun _ -> go ()
-    | Ok (`Line line) ->
-        Conduit_lwt.send flow (Cstruct.of_string (line ^ "\n")) >>? fun _ ->
-        Conduit_lwt.close flow
-  in
-  go () >>= function
-  | Error err -> Fmt.failwith "%a" Conduit_lwt.pp_error err
-  | Ok () -> Lwt.return_unit
+let parse_request = eol <|> selector
 
-let server cfg ~protocol ~service =
-  Conduit_lwt.serve
-    ~handler:(fun flow -> handler (Conduit_lwt.pack protocol flow))
-    ~service cfg
+type gopher_error = CommandNotUnderstood of string
+[@@deriving show]
 
-let fiber ~host ~port =
-  let cfg : Conduit_lwt.TCP.configuration =
-    {
-      Conduit_lwt.TCP.sockaddr =
-        Unix.(ADDR_INET (inet_addr_of_string host, port));
-      capacity = 40;
-    }
-  in
-  let _always, run =
-    server cfg ~protocol:Conduit_lwt.TCP.protocol
-      ~service:Conduit_lwt.TCP.service
-  in
-  run ()
+and request = Selection of string | Menu | GopherError of gopher_error
+[@@deriving show]
+
+let eval str =
+  match parse_string ~consume:All parse_request str with
+  | Ok v when v = "\n" -> Menu
+  | Ok v -> Selection v
+  | Error msg -> GopherError (CommandNotUnderstood msg)
