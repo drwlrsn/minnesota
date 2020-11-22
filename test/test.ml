@@ -1,13 +1,8 @@
-
-
 let () =
-  let open Alcotest in
-  run "Parse Utils"
-    [
-      ( "char-predicate",
-        List.concat
-          [
-            Unit.tests; 
-            Property.tests;
-          ] );
-    ]
+  let open Alcotest_lwt in
+  Lwt_main.run
+  @@ run "Minnesota"
+       [
+         ("char-predicate", List.concat [ Unit.Gopher.tests; Property.tests ]);
+         ("store", Unit.Fs.tests);
+       ]

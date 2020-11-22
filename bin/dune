@@ -1,4 +1,4 @@
 (executable
  (public_name minnesota)
  (name main)
- (libraries minnesota))
+ (libraries minnesota logs fmt fmt.tty fmt.cli logs.fmt logs.cli))

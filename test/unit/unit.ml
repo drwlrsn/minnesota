@@ -1,1 +1,2 @@
-let tests = Gopher_test.tests
+module Gopher = Gopher_test
+module Fs = Fs_test

@@ -6,3 +6,4 @@ module Gopher = struct
 
   module P = Gopher.P
 end
+module Fs = Fs

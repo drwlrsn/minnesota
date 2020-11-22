@@ -1,3 +1,3 @@
 (library
  (name unit)
- (libraries alcotest minnesota))
+ (libraries alcotest minnesota alcotest-lwt))

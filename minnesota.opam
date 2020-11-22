@@ -1,0 +1,36 @@
+opam-version: "2.0"
+name: "minnesota"
+version: "0.1"
+synopsis: "An attempt at creating a gopher server"
+description: """
+This should not be used in production.
+"""
+maintainer: "Drew Larson <me@drewlarson.ca>"
+authors: "Drew Larson <me@drewlarson.ca>"
+license: "MIT"
+homepage: "http://drewlarson.ca/projects/minnesota"
+bug-reports: "https://github.com/drwlrsn/minnesota/issues"
+dev-repo: "git+https://github.com/drwlrsn/minnesota"
+depends: [ 
+  "ocaml" 
+  "ocamlfind" 
+  "ocamlformat" 
+  "alcotest" {with-test}
+  "qtest" {with-test}
+  "qcheck-alcotest" {with-test}
+  "cmdliner" 
+  "conduit"
+  "lwt" 
+  "uri" 
+  "ke" 
+  "fmt" 
+  "angstrom" 
+  "ppx_deriving" 
+  "logs" 
+  "utop"
+]
+build: [
+  ["./configure" "--prefix=%{prefix}%"]
+  [make]
+]
+install: [make "install"]

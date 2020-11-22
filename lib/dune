@@ -1,4 +1,4 @@
 (library
  (name minnesota)
- (libraries cmdliner conduit-lwt lwt uri ke fmt angstrom)
+ (libraries cmdliner lwt conduit-lwt uri ke fmt angstrom logs irmin irmin-mem)
  (preprocess (pps ppx_deriving.show)))
